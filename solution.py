@@ -12,6 +12,8 @@ boxes = cross(rows, cols)
 row_units = [cross(r, cols) for r in rows]
 column_units = [cross(rows, c) for c in cols]
 square_units = [cross(rs, cs) for rs in ('ABC','DEF','GHI') for cs in ('123','456','789')]
+# This will concatenate the diagonal units, by list comprehension. The difference between the forward diagonal
+# and the backwards diagonal is that we should traverse the columns in reverse order, from 9 to 1
 diagonal_units = [[rows[x] + cols[x] for x in range(len(rows))]] + [[rows[x] + cols[-(x+1)] for x in range(len(rows))]]
 unitlist = row_units + column_units + square_units + diagonal_units
 units = dict((s, [u for u in unitlist if s in u]) for s in boxes)
@@ -38,9 +40,18 @@ def naked_twins(values):
         the values dictionary with the naked twins eliminated from peers.
     """
 
-    #I guess this is not very pythonic, so to speak.
+    #I guess this is not very pythonic
+    #The algorithm works as follows:
+
 
     for unit in unitlist:
+        # For each unit, we obtain the list of possible values that are bigger than 1 in that unit
+        # In this list of possible values, we check boxes that have exactly 2 possibilites and if there
+        # is another box with the same 2 possibilites, we assign it to a double_set variable that contains
+        # the naked twins
+
+        # If this double_set is not empty, we proceed to
+        # eliminate all the chars from every naked twin in the boxes of the same unit
         list_of_values_in_unit = [values[box] for box in unit if len(values[box]) > 1]
         double_set = set([value for value in list_of_values_in_unit if (list_of_values_in_unit.count(value) >1 and len(value)==2)])
         if double_set:
@@ -88,24 +99,46 @@ def display(values):
     return
 
 def eliminate(values):
+    """
+    Will traverse the peer list of a box to eliminate possible values when a box is solved
+    Args:
+        grid(string) - A grid in dictionary form.
+    Returns:
+        The modified grid by the assignment of a value to a box, using the assign_value function
+
+    """
     solved_values = [box for box in values.keys() if len(values[box]) == 1]
     for box in solved_values:
         digit = values[box]
         for peer in peers[box]:
             values[peer] = values[peer].replace(digit,'')
-            #values = assign_value(values,peer,'')
     return values
 
 def only_choice(values):
+    """
+    Assigns a value to a box in the grid
+    Args:
+        grid(string) - A grid in dictionary form.
+    Returns:
+        The modified grid by the assignment of a value to a box, using the assign_value function
+
+    """
     for unit in unitlist:
         for digit in '123456789':
             dplaces = [box for box in unit if digit in values[box]]
             if len(dplaces) == 1:
-                #values[dplaces[0]] = digit
                 values = assign_value(values,dplaces[0],digit)
     return values
 
 def reduce_puzzle(values):
+    """
+    Applies the constraint strategies for a grid
+    Args:
+        grid(string) - A grid in dictionary form.
+    Returns:
+        The modified grid by the constraint propagation
+
+    """
     solved_values = [box for box in values.keys() if len(values[box]) == 1]
     stalled = False
     while not stalled:
@@ -120,6 +153,14 @@ def reduce_puzzle(values):
     return values
 
 def search(values):
+    """
+    Tries to solve the grid
+    Args:
+        grid(string) - A grid in dictionary form.
+    Returns:
+        The final grid, by consistently trying to reduce the puzzle
+
+    """
     values = reduce_puzzle(values)
     if values is False:
         return False ## Failed earlier
